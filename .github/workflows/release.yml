@@ -20,6 +20,6 @@ jobs:
           git archive --format=tar.gz --output=dist/3xui-shop-${{ github.ref_name }}.tar.gz ${{ github.ref }}
 
       - name: Upload archive to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/3xui-shop-${{ github.ref_name }}.tar.gz
