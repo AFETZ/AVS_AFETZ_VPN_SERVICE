@@ -323,14 +323,14 @@ dev = ["backports.zoneinfo ; python_version < \"3.9\"", "freezegun (>=1.0,<2.0)"
 
 [[package]]
 name = "cachetools"
-version = "5.5.2"
+version = "7.1.4"
 description = "Extensible memoizing collections and decorators"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "cachetools-5.5.2-py3-none-any.whl", hash = "sha256:d26a22bcc62eb95c3beabd9f1ee5e820d3d2704fe2967cbe350e20c8ffcd3f0a"},
-    {file = "cachetools-5.5.2.tar.gz", hash = "sha256:1a661caa9175d26759571b2e19580f9d6393969e5dfca11fdb1f947a23e640d4"},
+    {file = "cachetools-7.1.4-py3-none-any.whl", hash = "sha256:323dc4127934744db5b54eb4924482d7edafbf9554e820d1531c2e08c0e4ef54"},
+    {file = "cachetools-7.1.4.tar.gz", hash = "sha256:437f55a4e0c1b01a4f3077cc470e6991d47430970e36fbcb77e2be0df4fc1cd6"},
 ]
 
 [[package]]
@@ -2057,4 +2057,4 @@ urllib3 = "*"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "73f38032a80fd2339c6f549afa75ee3a901af0dc18f47437272cffa0cc62ecbb"
+content-hash = "74f2ed5b265558222c7fe867982948592d4719b755c51c4008f137548e9d0efa"
