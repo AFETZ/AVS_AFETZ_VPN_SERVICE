@@ -665,29 +665,6 @@ def test_get_filtered_additional_profile_url_uses_domain_and_vpn_id(subscription
     )
 
 
-def test_get_cabinet_url_uses_public_domain_by_default(subscription_service):
-    user = SimpleNamespace(vpn_id="vpn-502")
-
-    assert (
-        subscription_service.get_cabinet_url(user)
-        == "https://bot.example/cabinet/vpn-502"
-    )
-
-
-def test_get_cabinet_url_can_use_separate_cabinet_domain(subscription_service):
-    user = SimpleNamespace(vpn_id="vpn-503")
-    subscription_service.config.bot.CABINET_DOMAIN = "https://pay.example"
-
-    assert (
-        subscription_service.get_cabinet_url(user)
-        == "https://pay.example/cabinet/vpn-503"
-    )
-    assert (
-        subscription_service.get_additional_profile_url(user)
-        == "https://bot.example/wl/vpn-503"
-    )
-
-
 def test_apply_personal_discount_normalizes_price_by_currency():
     user = SimpleNamespace(personal_discount_percent=25)
 

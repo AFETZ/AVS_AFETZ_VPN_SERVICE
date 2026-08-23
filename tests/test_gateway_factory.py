@@ -17,3 +17,21 @@ def test_gateway_factory_sorts_gateways_by_runtime_plan_service_order():
         "pay_yookassa",
         "pay_telegram_stars",
     ]
+
+
+def test_gateway_factory_sorts_lazy_gateway_names():
+    class LazyName:
+        def __init__(self, value):
+            self.value = value
+
+        def __str__(self):
+            return self.value
+
+    factory = GatewayFactory()
+    factory._plan_service = SimpleNamespace(get_payment_order=lambda: [])  # noqa: SLF001
+    factory._gateways = {  # noqa: SLF001
+        "b": SimpleNamespace(callback="b", name=LazyName("B")),
+        "a": SimpleNamespace(callback="a", name=LazyName("A")),
+    }
+
+    assert [gateway.callback for gateway in factory.get_gateways()] == ["a", "b"]

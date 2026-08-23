@@ -20,6 +20,10 @@ from app.bot.services.subscription_state import (
     client_data_snapshot_updates,
 )
 from app.bot.services.xui_gateway import XuiGateway
+from app.bot.utils.public_links import (
+    subscription_backup_base_url,
+    subscription_base_url,
+)
 from app.bot.utils.network import extract_base_url
 from app.bot.utils.time import (
     add_days_to_timestamp,
@@ -571,9 +575,9 @@ class VPNService:
             logger.debug(f"Server ID for user {user.tg_id} not found.")
             return None
 
-        domain = self.config.bot.DOMAIN.rstrip("/")
-        if not domain.startswith(("http://", "https://")):
-            domain = f"https://{domain}"
+        domain = subscription_base_url(self.config)
+        if not domain:
+            return None
         key = f"{domain}/sub/{user.vpn_id}"
         logger.debug(
             "Fetched public subscription URL for user %s (vpn_id=%s).",
@@ -581,6 +585,19 @@ class VPNService:
             _redact_identifier(user.vpn_id),
         )
         return key
+
+    async def get_backup_key(self, user: User) -> str | None:
+        async with self.session() as session:
+            user = await User.get(session=session, tg_id=user.tg_id)
+
+        if not user.server_id:
+            return None
+
+        domain = subscription_backup_base_url(self.config)
+        primary_domain = subscription_base_url(self.config)
+        if not domain or domain == primary_domain:
+            return None
+        return f"{domain}/sub/{user.vpn_id}"
 
     async def _remaining_duration_days(self, user: User) -> int:
         client_data = await self.get_client_data(user=user, raise_on_error=False)

@@ -15,6 +15,7 @@ from app.bot.utils.constants import (
     MAIN_MESSAGE_ID_KEY,
     PREVIOUS_CALLBACK_KEY,
 )
+from app.bot.utils.public_links import subscription_base_url
 from app.bot.utils.navigation import NavDownload, NavMain
 from app.bot.utils.network import parse_redirect_url
 from app.config import Config
@@ -98,6 +99,8 @@ async def _show_platform_download(
 ) -> None:
     logger.info("User %s selected platform: %s", user.tg_id, platform_nav)
     key = await services.vpn.get_key(user)
+    get_backup_key = getattr(services.vpn, "get_backup_key", None)
+    backup_key = await get_backup_key(user) if get_backup_key else None
     status = await services.subscription.get_subscription_status(user)
     additional_profile_key = (
         services.subscription.get_additional_profile_url(user)
@@ -113,17 +116,22 @@ async def _show_platform_download(
     match platform_nav:
         case NavDownload.PLATFORM_IOS:
             platform = _("download:message:platform_ios")
+            app_store_notice = "\n\n" + _("download:message:ios_app_store_notice")
         case NavDownload.PLATFORM_ANDROID:
             platform = _("download:message:platform_android")
+            app_store_notice = ""
         case _:
             platform = _("download:message:platform_windows")
+            app_store_notice = ""
 
     await callback.message.edit_text(
-        text=_("download:message:connect_to_vpn").format(platform=platform),
+        text=_("download:message:connect_to_vpn").format(platform=platform)
+        + app_store_notice,
         reply_markup=download_keyboard(
             platform=platform_nav,
             key=key,
-            url=config.bot.DOMAIN,
+            backup_key=backup_key,
+            url=subscription_base_url(config) or config.bot.DOMAIN,
             additional_profile_key=additional_profile_key,
             filtered_additional_profile_key=filtered_additional_profile_key,
         ),

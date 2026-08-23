@@ -10,7 +10,7 @@ Telegram
   -> Services layer
   -> SQLite / Redis / 3X-UI
   -> aiohttp public endpoints
-  -> Happ / payment gateways / web cabinet
+  -> Happ / payment gateways
 ```
 
 ## Компоненты
@@ -21,7 +21,7 @@ Telegram
 | `app/bot/routers` | Telegram UI, callback navigation, user/admin flows |
 | `app/bot/services` | подписки, VPN, server pool, notifications, job locks, runtime metrics |
 | `app/bot/tasks` | фоновые reconciliation и expiry jobs |
-| `app/web` | subscription proxy, additional profiles, connection redirect, cabinet |
+| `app/web` | subscription proxy, additional profiles, connection redirect |
 | `app/db` | SQLAlchemy models, Alembic migrations |
 | `plans.json` | коммерческий каталог тарифов |
 
@@ -29,14 +29,14 @@ Telegram
 
 | Route | Назначение |
 | --- | --- |
-| `/healthz` | health check |
-| `/readyz` | readiness check: БД, Redis и runtime-сводка |
+| `/healthz` | локальный health check |
+| `/readyz` | локальный readiness check: БД, Redis и runtime-сводка |
 | `/webhook` | Telegram webhook endpoint |
 | `/connection` | redirect для Happ deep-links |
+| `/geoip.dat`, `/geosite.dat` | локально кэшируемые geo-файлы для Happ; клиент не обращается к GitHub напрямую |
 | `/sub/{vpn_id}` | основная подписка |
 | `/wl-filtered/{vpn_id}` | рекомендуемая подписка обхода БС |
 | `/wl/{vpn_id}` | запасная подписка обхода БС |
-| `/cabinet/{vpn_id}` | web cabinet |
 | payment callbacks | YooKassa, YooMoney, Cryptomus, Heleket |
 
 ## Data Ownership
@@ -53,5 +53,7 @@ Telegram
 
 - Бот не должен отдавать подписку неактивному пользователю.
 - Web endpoints валидируют `vpn_id` и состояние подписки.
+- Ссылки Happ и geo-файлов строятся на `BOT_SUBSCRIPTION_DOMAIN` с fallback на `BOT_DOMAIN`.
+- Корень домена, health endpoints и неизвестные маршруты не публикуются наружу.
 - Runtime state не хранится в Git.
 - Миграции Alembic должны быть совместимы с существующей production-базой.

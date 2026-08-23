@@ -10,6 +10,7 @@ from app.bot.routers.download.keyboard import (
     build_happ_routing_connection_url,
     download_keyboard,
 )
+from app.bot.utils.constants import APP_IOS_LINK, APPLE_ACCOUNT_REGION_HELP_LINK
 from app.bot.utils.navigation import NavDownload, NavSubscription
 
 
@@ -49,13 +50,22 @@ def test_build_connect_url_uses_happ_scheme_key_and_platform() -> None:
 
 
 def test_build_happ_routing_base64_keeps_ru_direct_and_rest_vpn() -> None:
-    profile = json.loads(base64.b64decode(build_happ_routing_base64()).decode("utf-8"))
+    profile = json.loads(
+        base64.b64decode(
+            build_happ_routing_base64("https://example.test")
+        ).decode("utf-8")
+    )
 
     assert profile["Name"] == "AFETZ РФ-сервисы напрямую"
     assert profile["GlobalProxy"] == "true"
     assert profile["DirectSites"] == ["geosite:CATEGORY-RU"]
     assert "geoip:RU" in profile["DirectIp"]
     assert profile["DomainStrategy"] == "IPIfNonMatch"
+
+
+def test_build_happ_routing_base64_rejects_missing_local_geo_domain() -> None:
+    with pytest.raises(ValueError, match="geo_base_url"):
+        build_happ_routing_base64("")
 
 
 def test_build_happ_routing_connection_url_uses_routing_scheme() -> None:
@@ -72,9 +82,10 @@ def test_build_happ_routing_connection_url_uses_routing_scheme() -> None:
     )
     assert params["scheme"] == ["happ://routing/onadd/"]
     assert params["platform"] == ["android"]
-    assert json.loads(base64.b64decode(params["key"][0]).decode("utf-8"))[
-        "DirectSites"
-    ] == ["geosite:CATEGORY-RU"]
+    routing = json.loads(base64.b64decode(params["key"][0]).decode("utf-8"))
+    assert routing["DirectSites"] == ["geosite:CATEGORY-RU"]
+    assert routing["Geoipurl"] == "https://example.test/geoip.dat"
+    assert routing["Geositeurl"] == "https://example.test/geosite.dat"
 
 
 def test_download_keyboard_shows_filtered_additional_profile_button() -> None:
@@ -102,6 +113,51 @@ def test_download_keyboard_shows_filtered_additional_profile_button() -> None:
     params = parse_qs(urlsplit(filtered_button.url).query)
 
     assert params["key"] == ["https://example.test/wl-filtered/user-id"]
+
+
+def test_download_keyboard_shows_backup_subscription_on_primary_connection_domain() -> None:
+    markup = download_keyboard(
+        platform=NavDownload.PLATFORM_WINDOWS,
+        url="https://link.example",
+        key="https://link.example/sub/user-id",
+        backup_key="https://backup.example/sub/user-id",
+    )
+    backup_button = next(
+        button
+        for button in flatten_keyboard_buttons(markup)
+        if button.text == "download:button:connect_primary_profile_backup"
+    )
+    parsed = urlsplit(backup_button.url)
+    params = parse_qs(parsed.query)
+
+    assert f"{parsed.scheme}://{parsed.netloc}{parsed.path}" == (
+        "https://link.example/connection"
+    )
+    assert params["key"] == ["https://backup.example/sub/user-id"]
+
+
+def test_ios_download_button_uses_global_app_store_listing() -> None:
+    markup = download_keyboard(
+        platform=NavDownload.PLATFORM_IOS,
+        url="https://example.test",
+        key="https://example.test/sub/user-id",
+    )
+    download_button = next(
+        button
+        for button in flatten_keyboard_buttons(markup)
+        if button.text == "download:button:download_ios_global"
+    )
+    region_help_button = next(
+        button
+        for button in flatten_keyboard_buttons(markup)
+        if button.text == "download:button:change_apple_region"
+    )
+
+    assert APP_IOS_LINK == (
+        "https://apps.apple.com/us/app/happ-proxy-utility/id6504287215?l=ru"
+    )
+    assert download_button.url == APP_IOS_LINK
+    assert region_help_button.url == APPLE_ACCOUNT_REGION_HELP_LINK
 
 
 def test_android_keyboard_matches_happ_only_flow_without_raw_or_client_choice() -> None:

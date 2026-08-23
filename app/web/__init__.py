@@ -1,3 +1,3 @@
 from .additional_profile import setup_additional_profile_route
-from .cabinet import setup_cabinet_routes
+from .geo_files import setup_geo_file_routes
 from .primary_profile import setup_primary_profile_route
