@@ -941,6 +941,20 @@ msgstr "📲 <b>Выберите вашу платформу:</b>"
 msgid "download:message:platform_ios"
 msgstr "🍏 IOS"
 
+msgid "download:message:ios_app_store_notice"
+msgstr ""
+"⚠️ <b>Важно для нового iPhone:</b> Happ удалён из российского App Store.\n"
+"\n"
+"Чтобы установить приложение:\n"
+"1. Нажмите «🌎 Как сменить регион App Store».\n"
+"2. Смените страну/регион вашего Apple Account на США или другой регион, где "
+"доступен Happ. Apple может потребовать завершить подписки, потратить остаток "
+"баланса и указать способ оплаты для нового региона.\n"
+"3. Вернитесь в бот и нажмите «📥 Happ — App Store США».\n"
+"\n"
+"Один только VPN или иностранный IP регион Apple Account не меняет. Если Happ "
+"уже установлен, не удаляйте его."
+
 #: app/bot/routers/download/handler.py:94
 msgid "download:message:platform_android"
 msgstr "🤖 Android"
@@ -990,9 +1004,18 @@ msgstr "💻 Windows"
 msgid "download:button:download"
 msgstr "📥 Скачать Happ"
 
+msgid "download:button:download_ios_global"
+msgstr "📥 Happ — App Store США"
+
+msgid "download:button:change_apple_region"
+msgstr "🌎 Как сменить регион App Store"
+
 #: app/bot/routers/download/keyboard.py:64
 msgid "download:button:connect_primary_profile"
 msgstr "🔌 Подключить основную подписку"
+
+msgid "download:button:connect_primary_profile_backup"
+msgstr "🛟 Запасная ссылка основной подписки"
 
 msgid "download:button:setup_ru_direct"
 msgstr "🇷🇺 РФ-сервисы напрямую, остальное через VPN"
@@ -1024,12 +1047,11 @@ msgstr ""
 "🌍 Работает там, где доступ к сайтам ограничен\n"
 "🌐 Подписка обхода БС доступна на части тарифов\n"
 "💳 Оплата и продление в пару кликов\n"
-"🌐 Личный кабинет для продления работает без Telegram, бота и активного VPN\n"
 "\n"
 "📢 Подпишитесь на наш <a href=\"https://t.me/AFetZEA\">новостной канал</a>, "
 "чтобы быть в курсе обновлений и акций!\n"
 "\n"
-"Сохраните кнопку «Продлить на сайте» заранее и выберите действие ниже."
+"Выберите действие ниже."
 
 #: app/bot/routers/main_menu/keyboard.py:25
 msgid "referral:button:get_referred_trial"

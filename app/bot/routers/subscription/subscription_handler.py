@@ -32,10 +32,6 @@ from .keyboard import (
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
-CABINET_RENEWAL_HINT = (
-    "🌐 Запасной способ продления: сайт работает без Telegram, бота и активного VPN.\n"
-    "Откройте кнопку «Продлить на сайте» и сохраните ссылку заранее."
-)
 
 
 def _get_plan_title(status) -> str:
@@ -55,10 +51,6 @@ def _get_remaining_period_days(status) -> int | None:
         return 0
 
     return max(1, math.ceil(remaining_ms / 86_400_000))
-
-
-def _with_cabinet_renewal_hint(text: str) -> str:
-    return f"{text}\n\n{CABINET_RENEWAL_HINT}"
 
 
 def _build_subscription_text(status) -> str:
@@ -93,12 +85,12 @@ def _build_subscription_text(status) -> str:
             )
 
         lines.append("Доступные действия:")
-        return _with_cabinet_renewal_hint("\n".join(lines))
+        return "\n".join(lines)
 
     if status.client_data and status.client_data.has_subscription_expired:
-        return _with_cabinet_renewal_hint(_("subscription:message:expired"))
+        return _("subscription:message:expired")
 
-    return _with_cabinet_renewal_hint(_("subscription:message:not_active"))
+    return _("subscription:message:not_active")
 
 
 def _build_additional_profile_text(
@@ -170,8 +162,6 @@ async def show_subscription(
         if status.has_additional_profile
         else None
     )
-    cabinet_url = services.subscription.get_cabinet_url(user)
-
     await callback.message.edit_text(
         text=_build_subscription_text(status),
         reply_markup=subscription_keyboard(
@@ -182,7 +172,6 @@ async def show_subscription(
             show_primary_profile=status.has_additional_profile,
             additional_profile_url=additional_profile_url,
             filtered_additional_profile_url=filtered_additional_profile_url,
-            cabinet_url=cabinet_url,
         ),
     )
 

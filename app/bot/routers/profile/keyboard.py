@@ -26,7 +26,7 @@ def format_server_label(server: Server | None) -> str:
     return labels.get(location) or server.location or server.name
 
 
-def buy_subscription_keyboard(cabinet_url: str | None = None) -> InlineKeyboardMarkup:
+def buy_subscription_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     builder.row(
@@ -35,14 +35,6 @@ def buy_subscription_keyboard(cabinet_url: str | None = None) -> InlineKeyboardM
             callback_data=NavSubscription.MAIN,
         )
     )
-    if cabinet_url:
-        builder.row(
-            InlineKeyboardButton(
-                text="🌐 Купить на сайте без VPN",
-                url=cabinet_url,
-            )
-        )
-
     builder.row(back_to_main_menu_button())
     return builder.as_markup()
 
@@ -50,7 +42,6 @@ def buy_subscription_keyboard(cabinet_url: str | None = None) -> InlineKeyboardM
 def profile_keyboard(
     *,
     show_additional_profile_key: bool = False,
-    cabinet_url: str | None = None,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
@@ -73,14 +64,6 @@ def profile_keyboard(
             callback_data=NavDownload.MAIN,
         )
     )
-    if cabinet_url:
-        builder.row(
-            InlineKeyboardButton(
-                text="🌐 Продлить на сайте без VPN",
-                url=cabinet_url,
-            )
-        )
-
     builder.row(back_to_main_menu_button())
     return builder.as_markup()
 

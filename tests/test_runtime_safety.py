@@ -66,6 +66,11 @@ def _readiness_services(*, circuit_open=False):
     )
 
 
+def test_internal_request_detection_rejects_reverse_proxy_clients():
+    assert runtime._is_internal_request(SimpleNamespace(remote="127.0.0.1")) is True
+    assert runtime._is_internal_request(SimpleNamespace(remote="172.22.0.1")) is False
+
+
 async def test_readiness_handler_returns_ok_when_dependencies_answer():
     handler = runtime.make_readiness_handler(
         db=SimpleNamespace(session=FakeSessionFactory()),

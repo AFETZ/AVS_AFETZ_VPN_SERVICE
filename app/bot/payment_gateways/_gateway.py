@@ -166,7 +166,6 @@ class PaymentGateway(ABC):
                     await self.services.notification.notify_upgrade_success(
                         user_id=user.tg_id,
                         plan_title=resolved_plan.title if resolved_plan else data.plan_code,
-                        cabinet_url=self.services.subscription.get_cabinet_url(user),
                     )
                 success = True
             elif data.is_extend:
@@ -188,7 +187,6 @@ class PaymentGateway(ABC):
                         await self.services.notification.notify_extend_success(
                             user_id=user.tg_id,
                             data=data,
-                            cabinet_url=self.services.subscription.get_cabinet_url(user),
                         )
             elif data.is_change:
                 success = await self.services.vpn.change_subscription(
@@ -208,7 +206,6 @@ class PaymentGateway(ABC):
                             user_id=user.tg_id,
                             data=data,
                             plan_title=resolved_plan.title if resolved_plan else "",
-                            cabinet_url=self.services.subscription.get_cabinet_url(user),
                         )
             else:
                 success = await self.services.vpn.create_subscription(
@@ -230,7 +227,6 @@ class PaymentGateway(ABC):
                         await self.services.notification.notify_purchase_success(
                             user_id=user.tg_id,
                             key=key,
-                            cabinet_url=self.services.subscription.get_cabinet_url(user),
                         )
 
             if success:

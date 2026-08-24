@@ -1,13 +1,28 @@
 http:
   routers:
     xui-shop-http:
-      rule: "Host(`afzvpn.superbebra.uk`) || Host(`bot.superbebra.uk`)"
+      rule: "(Host(`afzvpn.superbebra.uk`) || Host(`yk.superbebra.uk`)) && (Path(`/webhook`) || Path(`/connection`) || Path(`/cryptomus`) || Path(`/heleket`) || Path(`/yookassa`) || Path(`/yoomoney`) || Path(`/geoip.dat`) || Path(`/geosite.dat`) || PathPrefix(`/sub/`) || PathPrefix(`/wl/`) || PathPrefix(`/wl-filtered/`))"
       entryPoints: [web]
       middlewares: [xui-shop-https-redirect]
       service: xui-shop-noop
 
     xui-shop:
-      rule: "Host(`afzvpn.superbebra.uk`) || Host(`bot.superbebra.uk`)"
+      rule: "(Host(`afzvpn.superbebra.uk`) || Host(`yk.superbebra.uk`)) && (Path(`/webhook`) || Path(`/connection`) || Path(`/cryptomus`) || Path(`/heleket`) || Path(`/yookassa`) || Path(`/yoomoney`) || Path(`/geoip.dat`) || Path(`/geosite.dat`) || PathPrefix(`/sub/`) || PathPrefix(`/wl/`) || PathPrefix(`/wl-filtered/`))"
+      entryPoints: [websecure]
+      # These hosts are proxied by Cloudflare. TLS terminates at Cloudflare,
+      # so TLS-ALPN-01 cannot reach Traefik and must not be requested here.
+      tls: {}
+      middlewares: [xui-shop-security]
+      service: xui-shop
+
+    xui-shop-direct-http:
+      rule: "Host(`link.superbebra.uk`) && (Path(`/connection`) || Path(`/geoip.dat`) || Path(`/geosite.dat`) || PathPrefix(`/sub/`) || PathPrefix(`/wl/`) || PathPrefix(`/wl-filtered/`))"
+      entryPoints: [web]
+      middlewares: [xui-shop-https-redirect]
+      service: xui-shop-noop
+
+    xui-shop-link:
+      rule: "Host(`link.superbebra.uk`) && (Path(`/connection`) || Path(`/geoip.dat`) || Path(`/geosite.dat`) || PathPrefix(`/sub/`) || PathPrefix(`/wl/`) || PathPrefix(`/wl-filtered/`))"
       entryPoints: [websecure]
       tls:
         certResolver: le
@@ -32,7 +47,7 @@ http:
     xui-shop:
       loadBalancer:
         servers:
-          - url: "http://172.22.0.1:8080"
+          - url: "http://host.docker.internal:8080"
 
     xui-shop-noop:
       loadBalancer:

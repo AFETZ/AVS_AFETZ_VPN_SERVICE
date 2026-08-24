@@ -14,7 +14,6 @@ from app.bot.services.job_locks import RedisJobLock
 from app.bot.services.runtime_metrics import open_fd_count, runtime_metrics
 from app.bot.services.subscription_state import client_data_from_user_snapshot
 from app.bot.services.vpn import InboundCache
-from app.bot.utils.cabinet_links import cabinet_renewal_hint
 from app.db.models import User
 
 logger = logging.getLogger(__name__)
@@ -179,9 +178,6 @@ async def notify_users_with_expiring_subscription(
                     "Текущая подписка закончилась.\n\n"
                     f"Запланированный тариф: {pending_plan_code}.\n"
                     "Откройте «Тарифы», чтобы оплатить следующий период."
-                ) + cabinet_renewal_hint(
-                    getattr(notification_service, "config", None),
-                    user,
                 ),
             )
             await redis.set(user_notified_key, "true", ex=EXPIRY_NOTIFICATION_TTL)
@@ -220,9 +216,6 @@ async def notify_users_with_expiring_subscription(
         ).format(
             devices=client_data.max_devices,
             expiry_time=client_data.expiry_time,
-        ) + cabinet_renewal_hint(
-            getattr(notification_service, "config", None),
-            user,
         )
         await notification_service.notify_by_id(
             chat_id=user.tg_id,

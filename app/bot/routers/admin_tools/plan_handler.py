@@ -291,7 +291,7 @@ async def _render_plan_editor(
     plans = services.plan.get_all_plan_records()
     public_count = sum(1 for plan in plans if plan.is_public)
     gateways = gateway_factory.get_gateways()
-    gateway_names = ", ".join(gateway.name for gateway in gateways) or "—"
+    gateway_names = ", ".join(str(gateway.name) for gateway in gateways) or "—"
     await message.edit_text(
         text=(
             "📦 <b>Тарифы и платежи</b>\n\n"

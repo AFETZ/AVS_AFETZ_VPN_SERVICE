@@ -8,6 +8,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.bot.routers.misc.keyboard import back_button, back_to_main_menu_button
 from app.bot.utils.constants import (
+    APPLE_ACCOUNT_REGION_HELP_LINK,
     APP_ANDROID_LINK,
     APP_ANDROID_SCHEME,
     APP_HAPP_ROUTING_SCHEME,
@@ -37,7 +38,10 @@ def build_connect_url(url: str, scheme: str, key: str, platform_param: str) -> s
     return f"{url}{CONNECTION_WEBHOOK}?{connect_params}"
 
 
-def build_happ_routing_base64() -> str:
+def build_happ_routing_base64(geo_base_url: str) -> str:
+    geo_base_url = geo_base_url.rstrip("/")
+    if not geo_base_url:
+        raise ValueError("geo_base_url is required for the Happ routing profile")
     profile = {
         "Name": "AFETZ РФ-сервисы напрямую",
         "GlobalProxy": "true",
@@ -47,12 +51,8 @@ def build_happ_routing_base64() -> str:
         "DomesticDNSType": "DoH",
         "DomesticDNSDomain": "https://dns.google/dns-query",
         "DomesticDNSIP": "8.8.8.8",
-        "Geoipurl": (
-            "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
-        ),
-        "Geositeurl": (
-            "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
-        ),
+        "Geoipurl": f"{geo_base_url}/geoip.dat",
+        "Geositeurl": f"{geo_base_url}/geosite.dat",
         "LastUpdated": "",
         "DnsHosts": {},
         "DirectSites": _unique_nonempty(["geosite:CATEGORY-RU"]),
@@ -74,11 +74,17 @@ def build_happ_routing_base64() -> str:
     return base64.b64encode(raw).decode("ascii")
 
 
-def build_happ_routing_connection_url(url: str, platform_param: str) -> str:
+def build_happ_routing_connection_url(
+    url: str,
+    platform_param: str,
+    *,
+    geo_base_url: str | None = None,
+) -> str:
+    resolved_geo_base_url = geo_base_url or url
     return build_connect_url(
         url=url,
         scheme=APP_HAPP_ROUTING_SCHEME,
-        key=build_happ_routing_base64(),
+        key=build_happ_routing_base64(resolved_geo_base_url),
         platform_param=platform_param,
     )
 
@@ -114,6 +120,7 @@ def download_keyboard(
     platform: NavDownload,
     url: str,
     key: str | None,
+    backup_key: str | None = None,
     additional_profile_key: str | None = None,
     filtered_additional_profile_key: str | None = None,
 ) -> InlineKeyboardMarkup:
@@ -123,19 +130,35 @@ def download_keyboard(
         case NavDownload.PLATFORM_IOS:
             scheme = APP_IOS_SCHEME
             download = APP_IOS_LINK
+            download_text = _("download:button:download_ios_global")
+            show_apple_region_help = True
             platform_param = "ios"
         case NavDownload.PLATFORM_ANDROID:
             scheme = APP_ANDROID_SCHEME
             download = APP_ANDROID_LINK
+            download_text = _("download:button:download")
+            show_apple_region_help = False
             platform_param = "android"
         case _:
             scheme = APP_WINDOWS_SCHEME
             download = APP_WINDOWS_LINK
+            download_text = _("download:button:download")
+            show_apple_region_help = False
             platform_param = "windows"
 
     connect = (
         build_connect_url(url=url, scheme=scheme, key=key, platform_param=platform_param)
         if key
+        else None
+    )
+    backup_connect = (
+        build_connect_url(
+            url=url,
+            scheme=scheme,
+            key=backup_key,
+            platform_param=platform_param,
+        )
+        if backup_key
         else None
     )
     routing_connect = (
@@ -171,6 +194,13 @@ def download_keyboard(
             callback_data=NavSubscription.MAIN if not key else None,
         )
     )
+    if backup_connect:
+        builder.row(
+            InlineKeyboardButton(
+                text=_("download:button:connect_primary_profile_backup"),
+                url=backup_connect,
+            )
+        )
     if routing_connect:
         builder.row(
             InlineKeyboardButton(
@@ -194,9 +224,16 @@ def download_keyboard(
             callback_data=NavSubscription.ADDITIONAL_PROFILE if not additional_profile_key else None,
         )
     )
+    if show_apple_region_help:
+        builder.row(
+            InlineKeyboardButton(
+                text=_("download:button:change_apple_region"),
+                url=APPLE_ACCOUNT_REGION_HELP_LINK,
+            )
+        )
     builder.row(
         InlineKeyboardButton(
-            text=_("download:button:download"),
+            text=download_text,
             url=download,
         )
     )

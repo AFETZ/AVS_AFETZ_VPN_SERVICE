@@ -107,7 +107,6 @@ async def present_main_menu(
             is_referral_available=config.shop.REFERRER_REWARD_ENABLED,
             is_trial_available=await services.subscription.is_trial_available(user),
             is_referred_trial_available=await services.referral.is_referred_trial_available(user),
-            cabinet_url=services.subscription.get_cabinet_url(user),
         ),
     )
     created[MAIN_MESSAGE_ID_KEY] = main_menu.message_id
@@ -246,7 +245,6 @@ async def callback_main_menu(
         is_referral_available=config.shop.REFERRER_REWARD_ENABLED,
         is_trial_available=await services.subscription.is_trial_available(user),
         is_referred_trial_available=await services.referral.is_referred_trial_available(user),
-        cabinet_url=services.subscription.get_cabinet_url(user),
     )
     text = _("main_menu:message:main").format(name=user.first_name)
 
@@ -278,7 +276,6 @@ async def redirect_to_main_menu(
         is_referral_available=config.shop.REFERRER_REWARD_ENABLED,
         is_trial_available=await services.subscription.is_trial_available(user),
         is_referred_trial_available=await services.referral.is_referred_trial_available(user),
-        cabinet_url=services.subscription.get_cabinet_url(user),
     )
     text = _("main_menu:message:main").format(name=user.first_name)
 

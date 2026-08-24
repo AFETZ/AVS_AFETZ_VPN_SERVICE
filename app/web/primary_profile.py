@@ -47,9 +47,6 @@ FORWARDED_HEADERS = (
     "content-type",
     "profile-title",
     "profile-update-interval",
-    "profile-web-page-url",
-    "support-url",
-    "announce",
     "subscription-userinfo",
 )
 
@@ -379,18 +376,10 @@ def _apply_happ_stability_headers(headers: dict[str, str]) -> None:
     headers["no-limit-xhttp-enabled"] = "1"
 
 
-def _build_cabinet_url(subscription_service: SubscriptionService, user) -> str | None:
-    get_cabinet_url = getattr(subscription_service, "get_cabinet_url", None)
-    if not get_cabinet_url:
-        return None
-    return get_cabinet_url(user)
-
-
 def _build_inactive_profile_response(
     subscription_service: SubscriptionService,
     user,
 ) -> web.Response:
-    cabinet_url = _build_cabinet_url(subscription_service, user)
     headers = {
         "content-type": "text/plain; charset=utf-8",
         "cache-control": "no-store, no-cache, must-revalidate",
@@ -398,15 +387,7 @@ def _build_inactive_profile_response(
         "expires": "0",
         "profile-title": f"{PROFILE_TITLE} Expired",
     }
-    if cabinet_url:
-        headers["profile-web-page-url"] = cabinet_url
-        headers["support-url"] = cabinet_url
-        headers["announce"] = f"Subscription expired. Renew: {cabinet_url}"
-
-    text = "# Subscription expired\n"
-    if cabinet_url:
-        text += f"# Renew: {cabinet_url}\n"
-    return web.Response(text=text, headers=headers)
+    return web.Response(text="# Subscription expired\n", headers=headers)
 
 
 class PrimaryProfileProxy:
@@ -734,11 +715,6 @@ class PrimaryProfileProxy:
             response_headers["profile-title"] = f"{PROFILE_TITLE} Raw"
         _apply_happ_stability_headers(response_headers)
 
-        cabinet_url = _build_cabinet_url(self.subscription_service, user)
-        if cabinet_url:
-            response_headers["profile-web-page-url"] = cabinet_url
-            response_headers["support-url"] = cabinet_url
-
         response_headers["content-type"] = "text/plain; charset=utf-8"
         response_headers["cache-control"] = "no-store, no-cache, must-revalidate"
         response_headers["pragma"] = "no-cache"
@@ -905,11 +881,6 @@ class PrimaryProfileProxy:
         if requested_format == "raw":
             response_headers["profile-title"] = f"{PROFILE_TITLE} Raw"
         _apply_happ_stability_headers(response_headers)
-        cabinet_url = _build_cabinet_url(self.subscription_service, user)
-        if cabinet_url:
-            response_headers["profile-web-page-url"] = cabinet_url
-            response_headers["support-url"] = cabinet_url
-
         response_headers["content-type"] = "text/plain; charset=utf-8"
         response_headers["cache-control"] = "no-store, no-cache, must-revalidate"
         response_headers["pragma"] = "no-cache"

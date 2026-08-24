@@ -16,7 +16,6 @@ def main_menu_keyboard(
     is_referral_available: bool = False,
     is_trial_available: bool = False,
     is_referred_trial_available: bool = False,
-    cabinet_url: str | None = None,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
@@ -30,13 +29,6 @@ def main_menu_keyboard(
             callback_data=NavSubscription.MAIN,
         ),
     )
-    if cabinet_url:
-        builder.row(
-            InlineKeyboardButton(
-                text="🌐 Продлить на сайте",
-                url=cabinet_url,
-            )
-        )
     builder.row(
         InlineKeyboardButton(
             text=_("main_menu:button:support"),
