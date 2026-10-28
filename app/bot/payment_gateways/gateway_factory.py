@@ -42,7 +42,7 @@ class GatewayFactory:
             gateways,
             key=lambda gateway: (
                 order_index.get(gateway.callback, len(order_index)),
-                gateway.name,
+                str(gateway.name),
             ),
         )
 

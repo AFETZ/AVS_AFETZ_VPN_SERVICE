@@ -105,7 +105,6 @@ async def test_proxy_returns_renewal_profile_when_subscription_inactive():
     status = SimpleNamespace(status_check_ok=True, is_active=False)
     service = SimpleNamespace(
         get_subscription_status_by_vpn_id=AsyncMock(return_value=(user, status)),
-        get_cabinet_url=lambda user: f"https://bot.example/cabinet/{user.vpn_id}",
     )
     proxy = PrimaryProfileProxy(subscription_service=service)
 
@@ -113,8 +112,8 @@ async def test_proxy_returns_renewal_profile_when_subscription_inactive():
 
     assert response.status == 200
     assert b"Subscription expired" in response.body
-    assert response.headers["profile-web-page-url"] == "https://bot.example/cabinet/vpn-1"
-    assert response.headers["support-url"] == "https://bot.example/cabinet/vpn-1"
+    assert "profile-web-page-url" not in response.headers
+    assert "support-url" not in response.headers
 
 
 @pytest.mark.asyncio
@@ -287,7 +286,6 @@ async def test_proxy_aggregates_profile_sources_for_happ_switching(monkeypatch):
     service = SimpleNamespace(
         get_subscription_status_by_vpn_id=AsyncMock(return_value=(user, status)),
         get_upstream_profile_sources=AsyncMock(return_value=sources),
-        get_cabinet_url=lambda user: f"https://bot.example/cabinet/{user.vpn_id}",
     )
     proxy = PrimaryProfileProxy(subscription_service=service)
 
@@ -425,7 +423,6 @@ def _aggregated_service(user, status, sources):
     return SimpleNamespace(
         get_subscription_status_by_vpn_id=AsyncMock(return_value=(user, status)),
         get_upstream_profile_sources=AsyncMock(return_value=sources),
-        get_cabinet_url=lambda user: f"https://bot.example/cabinet/{user.vpn_id}",
     )
 
 

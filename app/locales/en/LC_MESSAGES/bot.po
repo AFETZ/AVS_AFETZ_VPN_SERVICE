@@ -934,6 +934,21 @@ msgstr "📲 <b>Choose your platform:</b>"
 msgid "download:message:platform_ios"
 msgstr "🍏 IOS"
 
+msgid "download:message:ios_app_store_notice"
+msgstr ""
+"⚠️ <b>Important for a new iPhone:</b> Happ has been removed from the Russian "
+"App Store.\n"
+"\n"
+"To install it:\n"
+"1. Tap '🌎 How to change the App Store region'.\n"
+"2. Change your Apple Account country/region to the United States or another "
+"region where Happ is available. Apple may require you to end subscriptions, "
+"spend the remaining balance, and provide a payment method for the new region.\n"
+"3. Return to the bot and tap '📥 Happ — US App Store'.\n"
+"\n"
+"A VPN or foreign IP address alone does not change the Apple Account region. "
+"If Happ is already installed, do not delete it."
+
 #: app/bot/routers/download/handler.py:94
 msgid "download:message:platform_android"
 msgstr "🤖 Android"
@@ -982,9 +997,18 @@ msgstr "💻 Windows"
 msgid "download:button:download"
 msgstr "📥 Download Happ"
 
+msgid "download:button:download_ios_global"
+msgstr "📥 Happ — US App Store"
+
+msgid "download:button:change_apple_region"
+msgstr "🌎 How to change App Store region"
+
 #: app/bot/routers/download/keyboard.py:64
 msgid "download:button:connect_primary_profile"
 msgstr "🔌 Connect main subscription"
+
+msgid "download:button:connect_primary_profile_backup"
+msgstr "🛟 Backup main subscription link"
 
 msgid "download:button:setup_ru_direct"
 msgstr "🇷🇺 Russian services directly, everything else via VPN"
@@ -1016,12 +1040,11 @@ msgstr ""
 "🌍 Works where internet access is restricted\n"
 "🌐 Whitelist bypass is available on selected plans and is provided as is, without guarantees\n"
 "💳 Payment and renewal in a few clicks\n"
-"🌐 The personal cabinet can renew access without Telegram, the bot, or an active VPN\n"
 "\n"
 "📢 Subscribe to our <a href=\"https://t.me/AFetZEA\">news channel</a> "
 "to stay updated on news and promotions!\n"
 "\n"
-"Save the “Renew on website” button in advance, then choose an action below."
+"Choose an action below."
 
 #: app/bot/routers/main_menu/keyboard.py:25
 msgid "referral:button:get_referred_trial"

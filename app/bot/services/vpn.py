@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 import asyncio
 import logging
 import math
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 from py3xui import Client, Inbound
@@ -20,6 +21,10 @@ from app.bot.services.subscription_state import (
     client_data_snapshot_updates,
 )
 from app.bot.services.xui_gateway import XuiGateway
+from app.bot.utils.public_links import (
+    subscription_backup_base_url,
+    subscription_base_url,
+)
 from app.bot.utils.network import extract_base_url
 from app.bot.utils.time import (
     add_days_to_timestamp,
@@ -571,9 +576,9 @@ class VPNService:
             logger.debug(f"Server ID for user {user.tg_id} not found.")
             return None
 
-        domain = self.config.bot.DOMAIN.rstrip("/")
-        if not domain.startswith(("http://", "https://")):
-            domain = f"https://{domain}"
+        domain = subscription_base_url(self.config)
+        if not domain:
+            return None
         key = f"{domain}/sub/{user.vpn_id}"
         logger.debug(
             "Fetched public subscription URL for user %s (vpn_id=%s).",
@@ -581,6 +586,19 @@ class VPNService:
             _redact_identifier(user.vpn_id),
         )
         return key
+
+    async def get_backup_key(self, user: User) -> str | None:
+        async with self.session() as session:
+            user = await User.get(session=session, tg_id=user.tg_id)
+
+        if not user.server_id:
+            return None
+
+        domain = subscription_backup_base_url(self.config)
+        primary_domain = subscription_base_url(self.config)
+        if not domain or domain == primary_domain:
+            return None
+        return f"{domain}/sub/{user.vpn_id}"
 
     async def _remaining_duration_days(self, user: User) -> int:
         client_data = await self.get_client_data(user=user, raise_on_error=False)
@@ -697,7 +715,10 @@ class VPNService:
         else:
             expiry_time_to_use = current_time
 
-        expiry_time = add_days_to_timestamp(timestamp=expiry_time_to_use, days=duration)
+        expiry_time = (
+            0 if client.expiry_time == 0 and not replace_duration
+            else add_days_to_timestamp(timestamp=expiry_time_to_use, days=duration)
+        )
         client.enable = enable
         client.id = user.vpn_id
         client.expiry_time = expiry_time
@@ -921,6 +942,7 @@ class VPNService:
             logger.warning("Cannot set enabled=%s for user %s: no server connection.", enabled, user.tg_id)
             return False
 
+
         try:
             client = await self.xui_gateway.get_client_by_email(connection, str(user.tg_id))
             if client is None:
@@ -939,6 +961,52 @@ class VPNService:
         except Exception as exception:
             logger.error("Failed to set client %s enabled=%s: %s", user.tg_id, enabled, exception)
             return False
+
+    async def set_lifetime_subscription(self, user: User, enabled: bool) -> bool:
+        """Set unlimited expiry on every profile node; keep device/traffic limits.
+
+        Read all nodes before changing any. Restore previous clients on a failed
+        write, and never report a partially applied change as successful.
+        """
+        if enabled and getattr(user, "is_blocked", False):
+            return False
+        sources = await self.get_upstream_profile_sources(user)
+        if not sources:
+            return False
+        originals = []
+        attempted = []
+        try:
+            for source in sources:
+                connection = await self.server_pool_service.get_connection_by_server_id(source.server.id)
+                if not connection:
+                    raise RuntimeError("Subscription server is unavailable")
+                inbounds = await self.xui_gateway.get_inbound_list(connection)
+                matches = []
+                for inbound in inbounds or []:
+                    for existing in inbound.settings.clients:
+                        if existing.email == str(user.tg_id):
+                            client = deepcopy(existing)
+                            client.inbound_id = inbound.id
+                            matches.append(client)
+                if not matches:
+                    raise RuntimeError("Create a subscription on all profile servers first")
+                originals.extend((connection, deepcopy(client)) for client in matches)
+            for connection, original in originals:
+                client = deepcopy(original)
+                client.expiry_time = 0
+                client.enable = enabled
+                attempted.append((connection, original))
+                await self.xui_gateway.update_client(connection, client_uuid=client.id, client=client)
+        except Exception:
+            logger.exception("Lifetime subscription update failed for user %s", user.tg_id)
+            for connection, original in reversed(attempted):
+                try:
+                    await self.xui_gateway.update_client(connection, client_uuid=original.id, client=original)
+                except Exception:
+                    logger.exception("Lifetime rollback failed for user %s on server %s", user.tg_id, connection.server.id)
+            return False
+        await self.refresh_subscription_snapshot(user)
+        return True
 
     async def process_bonus_days(self, user: User, duration: int, devices: int) -> bool:
         if await self.is_client_exists(user):

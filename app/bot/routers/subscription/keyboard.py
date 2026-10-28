@@ -45,7 +45,6 @@ def subscription_keyboard(
     show_primary_profile: bool = False,
     additional_profile_url: str | None = None,
     filtered_additional_profile_url: str | None = None,
-    cabinet_url: str | None = None,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
@@ -56,22 +55,7 @@ def subscription_keyboard(
                 callback_data=callback_data.pack(),
             )
         )
-        if cabinet_url:
-            builder.row(
-                InlineKeyboardButton(
-                    text="🌐 Купить на сайте без VPN",
-                    url=cabinet_url,
-                )
-            )
     else:
-        if cabinet_url:
-            builder.row(
-                InlineKeyboardButton(
-                    text="🌐 Продлить на сайте без VPN",
-                    url=cabinet_url,
-                )
-            )
-
         if show_primary_profile:
             builder.row(
                 InlineKeyboardButton(

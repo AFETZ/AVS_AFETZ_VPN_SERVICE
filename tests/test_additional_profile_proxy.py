@@ -8,9 +8,13 @@ from aiohttp.test_utils import make_mocked_request
 from app.web.additional_profile import (
     ADDITIONAL_PROFILE_TITLE,
     ADDITIONAL_PROFILE_MIRROR_URLS,
+    AdditionalProfileSnapshot,
     AdditionalProfileProxy,
+    CurrentWhitelistProfileProxy,
     FILTERED_ADDITIONAL_PROFILE_MIRROR_URLS,
     FILTERED_ADDITIONAL_PROFILE_TITLE,
+    _build_current_whitelist_profile,
+    _parse_whitelist_cidrs,
 )
 
 
@@ -211,6 +215,117 @@ def test_filtered_profile_mirror_order_prefers_light_mobile_subscription():
         url.endswith("/Vless-Reality-White-Lists-Rus-Mobile.txt")
         for url in FILTERED_ADDITIONAL_PROFILE_MIRROR_URLS
     )
+
+
+def test_current_whitelist_profile_prefers_xhttp_and_rejects_unlisted_ips():
+    cidrs = _parse_whitelist_cidrs(
+        "1.1.1.0/24\n8.8.8.8/32\n",
+        "https://cidr.example/list.txt",
+    )
+    assert cidrs is not None
+    profile = _build_current_whitelist_profile(
+        [
+            "\n".join(
+                [
+                    "vless://id@1.1.1.3:443?type=grpc&security=reality#grpc",
+                    "vless://id@1.1.1.2:443?type=xhttp&mode=auto#auto",
+                    "vless://id@1.1.1.1:443?type=xhttp&mode=packet-up#packet",
+                    "vless://id@9.9.9.9:443?type=xhttp&mode=packet-up#blocked",
+                    "vless://id@1.1.1.1:443?mode=packet-up&type=xhttp#duplicate",
+                ]
+            )
+        ],
+        cidrs,
+    )
+
+    lines = profile.splitlines()
+    assert lines[0].endswith("#packet")
+    assert lines[1].endswith("#auto")
+    assert lines[2].endswith("#grpc")
+    assert all("9.9.9.9" not in line for line in lines)
+    assert len(lines) == 3
+
+
+@pytest.mark.asyncio
+async def test_current_whitelist_profile_drops_unreachable_endpoints(monkeypatch):
+    proxy = CurrentWhitelistProfileProxy(subscription_service=make_active_service())
+
+    async def probe(host, port):
+        return (host, port) == ("1.1.1.1", 443)
+
+    monkeypatch.setattr(proxy, "_probe_endpoint", probe)
+    profile = await proxy._filter_reachable_nodes(
+        "\n".join(
+            [
+                "vless://id@1.1.1.1:443?type=xhttp#reachable",
+                "vless://id@8.8.8.8:443?type=xhttp#unreachable",
+                "vless://id@1.1.1.1:443?type=grpc#same-endpoint",
+            ]
+        )
+    )
+
+    assert profile.splitlines() == [
+        "vless://id@1.1.1.1:443?type=xhttp#reachable",
+        "vless://id@1.1.1.1:443?type=grpc#same-endpoint",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_current_whitelist_proxy_builds_and_reuses_cached_profile(monkeypatch):
+    service = make_active_service()
+    proxy = CurrentWhitelistProfileProxy(subscription_service=service)
+    candidate = SimpleNamespace(
+        _fetch_profile=AsyncMock(
+            return_value=AdditionalProfileSnapshot(
+                text="vless://id@1.1.1.1:443?type=xhttp&mode=packet-up#current\n",
+                source_url="https://profiles.example/current.txt",
+            )
+        )
+    )
+    proxy._candidate_proxies = (candidate,)
+    cidrs = _parse_whitelist_cidrs(
+        "1.1.1.0/24\n",
+        "https://cidr.example/current.txt",
+    )
+    assert cidrs is not None
+    monkeypatch.setattr(proxy, "_fetch_cidr_snapshot", AsyncMock(return_value=cidrs))
+    monkeypatch.setattr(
+        proxy,
+        "_filter_reachable_nodes",
+        AsyncMock(side_effect=lambda text: text),
+    )
+
+    first = await proxy._fetch_profile()
+    second = await proxy._fetch_profile()
+
+    assert first == second
+    assert "mode=packet-up" in first.text
+    candidate._fetch_profile.assert_awaited_once()
+    proxy._fetch_cidr_snapshot.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_current_whitelist_proxy_serves_stale_cache_when_refresh_fails(monkeypatch):
+    service = make_active_service()
+    proxy = CurrentWhitelistProfileProxy(subscription_service=service)
+    proxy._cached_profile = AdditionalProfileSnapshot(
+        text="vless://cached@1.1.1.1:443?type=xhttp&mode=packet-up#cached\n",
+        source_url="https://profiles.example/cached.txt",
+    )
+    proxy._cached_profile_at = 0
+    proxy._candidate_proxies = (
+        SimpleNamespace(_fetch_profile=AsyncMock(side_effect=ClientError("down"))),
+    )
+    monkeypatch.setattr(
+        proxy,
+        "_fetch_cidr_snapshot",
+        AsyncMock(side_effect=ClientError("down")),
+    )
+
+    snapshot = await proxy._fetch_profile()
+
+    assert snapshot.is_stale is True
+    assert "cached@1.1.1.1" in snapshot.text
 
 
 @pytest.mark.asyncio

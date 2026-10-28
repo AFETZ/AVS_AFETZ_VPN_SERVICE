@@ -4,6 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.bot.utils.navigation import (
     NavAdminTools,
+    NavOpenFlux,
     NavProfile,
     NavReferral,
     NavSubscription,
@@ -16,7 +17,7 @@ def main_menu_keyboard(
     is_referral_available: bool = False,
     is_trial_available: bool = False,
     is_referred_trial_available: bool = False,
-    cabinet_url: str | None = None,
+    openflux_enabled: bool = False,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
@@ -30,13 +31,6 @@ def main_menu_keyboard(
             callback_data=NavSubscription.MAIN,
         ),
     )
-    if cabinet_url:
-        builder.row(
-            InlineKeyboardButton(
-                text="🌐 Продлить на сайте",
-                url=cabinet_url,
-            )
-        )
     builder.row(
         InlineKeyboardButton(
             text=_("main_menu:button:support"),
@@ -72,6 +66,15 @@ def main_menu_keyboard(
             url="https://t.me/AFetZEA",
         )
     )
+
+    # Callers pass the result of pilot_available(config, user.tg_id).
+    if openflux_enabled:
+        builder.row(
+            InlineKeyboardButton(
+                text="🧪 Обход БС · OpenFlux (тест)",
+                callback_data=NavOpenFlux.MAIN,
+            )
+        )
 
     if is_admin:
         builder.row(

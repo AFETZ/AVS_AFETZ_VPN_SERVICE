@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.filters import IsAdmin
 from app.bot.models import ServicesContainer
+from app.bot.routers.openflux.handler import pilot_available
 from app.bot.utils.constants import (
     MAIN_MEDIA_MESSAGE_ID_KEY,
     MAIN_MESSAGE_ID_KEY,
@@ -104,10 +105,10 @@ async def present_main_menu(
         text=text,
         reply_markup=main_menu_keyboard(
             is_admin,
+            openflux_enabled=pilot_available(config, user.tg_id),
             is_referral_available=config.shop.REFERRER_REWARD_ENABLED,
             is_trial_available=await services.subscription.is_trial_available(user),
             is_referred_trial_available=await services.referral.is_referred_trial_available(user),
-            cabinet_url=services.subscription.get_cabinet_url(user),
         ),
     )
     created[MAIN_MESSAGE_ID_KEY] = main_menu.message_id
@@ -243,10 +244,10 @@ async def callback_main_menu(
     is_admin = await IsAdmin()(user_id=user.tg_id)
     reply_markup = main_menu_keyboard(
         is_admin,
+        openflux_enabled=pilot_available(config, user.tg_id),
         is_referral_available=config.shop.REFERRER_REWARD_ENABLED,
         is_trial_available=await services.subscription.is_trial_available(user),
         is_referred_trial_available=await services.referral.is_referred_trial_available(user),
-        cabinet_url=services.subscription.get_cabinet_url(user),
     )
     text = _("main_menu:message:main").format(name=user.first_name)
 
@@ -275,10 +276,10 @@ async def redirect_to_main_menu(
     is_admin = await IsAdmin()(user_id=user.tg_id)
     reply_markup = main_menu_keyboard(
         is_admin,
+        openflux_enabled=pilot_available(config, user.tg_id),
         is_referral_available=config.shop.REFERRER_REWARD_ENABLED,
         is_trial_available=await services.subscription.is_trial_available(user),
         is_referred_trial_available=await services.referral.is_referred_trial_available(user),
-        cabinet_url=services.subscription.get_cabinet_url(user),
     )
     text = _("main_menu:message:main").format(name=user.first_name)
 

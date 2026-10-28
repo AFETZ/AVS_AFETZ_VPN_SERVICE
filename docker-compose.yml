@@ -45,6 +45,13 @@ services:
     logging: *default-logging
 
   bot:
+    group_add:
+      - "1000"
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
     build: .
     container_name: 3xui-shop-bot
     network_mode: host

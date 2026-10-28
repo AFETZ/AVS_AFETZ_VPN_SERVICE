@@ -1,0 +1,67 @@
+name: AFZOpenFlux
+options:
+  minimumXcodeGenVersion: 2.40.0
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1.1"
+    CURRENT_PROJECT_VERSION: "2"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  AFZOpenFlux:
+    type: application
+    platform: iOS
+    sources: [App]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.superbebra.afzopenflux
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: AFZ OpenFlux
+        CFBundleURLTypes:
+          - CFBundleURLName: uk.superbebra.afzopenflux.import
+            CFBundleURLSchemes: [afzopenflux]
+            CFBundleTypeRole: Editor
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+    entitlements:
+      path: App/AFZOpenFlux.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+    dependencies:
+      - target: Tunnel
+        embed: true
+      - sdk: NetworkExtension.framework
+  Tunnel:
+    type: app-extension
+    platform: iOS
+    sources: [Tunnel]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.superbebra.afzopenflux.Tunnel
+        APPLICATION_EXTENSION_API_ONLY: YES
+    info:
+      path: Tunnel/Info.plist
+      properties:
+        CFBundleDisplayName: AFZ OpenFlux Tunnel
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: PacketTunnelProvider
+    entitlements:
+      path: Tunnel/Tunnel.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+    dependencies:
+      - framework: Frameworks/Afzcore.xcframework
+        embed: false
+      - sdk: NetworkExtension.framework
+      - sdk: libresolv.tbd
+schemes:
+  AFZOpenFlux:
+    build:
+      targets:
+        AFZOpenFlux: all

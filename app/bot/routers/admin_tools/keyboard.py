@@ -94,7 +94,7 @@ def admin_tools_keyboard(is_dev: bool) -> InlineKeyboardMarkup:
     )
     builder.row(
         InlineKeyboardButton(
-            text="Тестовая покупка (10₽)",
+            text="💳 Автоплатёж 10 ₽",
             callback_data=NavAdminTools.TEST_PURCHASE,
         )
     )
@@ -522,9 +522,13 @@ def user_list_keyboard(
     return builder.as_markup()
 
 
-def user_details_keyboard(tg_id: int, *, is_blocked: bool = False) -> InlineKeyboardMarkup:
+def user_details_keyboard(tg_id: int, *, is_blocked: bool = False, is_lifetime: bool = False, subscription_enabled: bool = False) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
+    builder.row(InlineKeyboardButton(
+        text="⏸ Отключить вечную подписку" if is_lifetime and subscription_enabled else "∞ Включить вечную подписку",
+        callback_data=f"user_lifetime:{tg_id}:{0 if is_lifetime and subscription_enabled else 1}",
+    ))
     builder.row(
         InlineKeyboardButton(
             text=_("user_editor:button:send_message"),

@@ -1,4 +1,5 @@
 import asyncio
+import ipaddress
 import logging
 from urllib.parse import urljoin, urlparse
 
@@ -34,7 +35,7 @@ from app.config import DEFAULT_BOT_HOST, DEFAULT_LOCALES_DIR, Config, load_confi
 from app.db.database import Database
 from app.web import (
     setup_additional_profile_route,
-    setup_cabinet_routes,
+    setup_geo_file_routes,
     setup_primary_profile_route,
 )
 
@@ -186,7 +187,22 @@ async def on_shutdown(db: Database, bot: Bot, services: ServicesContainer) -> No
     logging.info("Bot stopped.")
 
 
-async def healthcheck(_) -> web.Response:
+def _is_internal_request(request: web.Request | None) -> bool:
+    if request is None:
+        return True
+
+    remote = request.remote
+    if not remote:
+        return False
+    try:
+        return ipaddress.ip_address(remote).is_loopback
+    except ValueError:
+        return False
+
+
+async def healthcheck(request: web.Request) -> web.Response:
+    if not _is_internal_request(request):
+        raise web.HTTPNotFound()
     return web.Response(text="ok")
 
 
@@ -215,7 +231,10 @@ def make_readiness_handler(
     redis: Redis,
     services: ServicesContainer,
 ):
-    async def readiness(_) -> web.Response:
+    async def readiness(request: web.Request) -> web.Response:
+        if not _is_internal_request(request):
+            raise web.HTTPNotFound()
+
         checks = {
             "database": await _check_database(db),
             "redis": await _check_redis(redis),
@@ -289,6 +308,11 @@ async def start_runtime(
     )
 
     tasks.transactions.start_scheduler(db.session, gateway_factory, redis=redis)
+    tasks.daily_test_autopay.start_scheduler(
+        db.session,
+        gateway_factory,
+        redis=redis,
+    )
     if config.shop.REFERRER_REWARD_ENABLED:
         tasks.referral.start_scheduler(
             session_factory=db.session,
@@ -435,12 +459,7 @@ async def main() -> None:
             app=app,
             subscription_service=services_container.subscription,
         )
-        setup_cabinet_routes(
-            app=app,
-            config=config,
-            services=services_container,
-            gateway_factory=gateway_factory,
-        )
+        setup_geo_file_routes(app)
 
         # Set up webhook request handler
         webhook_requests_handler = SimpleRequestHandler(dispatcher=dispatcher, bot=bot)

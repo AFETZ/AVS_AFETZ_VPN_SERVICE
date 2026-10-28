@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Добавить профиль · AFZ OpenFlux</title>
+<style>
+body{font:17px/1.5 system-ui,sans-serif;background:#f6f9f7;color:#183b30;margin:0;padding:32px 20px}main{max-width:460px;margin:8vh auto}h1{font-size:30px;line-height:1.2}a,button{display:block;box-sizing:border-box;width:100%;padding:16px;margin:16px 0;border-radius:12px;border:0;text-align:center;font:inherit;text-decoration:none;background:#087f5b;color:white;cursor:pointer}button{background:#dceee6;color:#183b30}a[hidden],button[hidden]{display:none}small{color:#46675b}#manual{overflow-wrap:anywhere;user-select:all;background:white;padding:12px;border-radius:8px}
+</style>
+<main>
+<p>AFZVPN</p><h1>Добавить профиль в OpenFlux</h1>
+<p id="status" role="status">Открываем приложение с настройками подключения…</p>
+<a id="open" hidden>Открыть AFZ OpenFlux</a>
+<button id="copy" hidden>Скопировать настройки</button>
+<p id="manual" hidden></p>
+<small id="help">Сначала установите AFZ OpenFlux 0.1.1 или новее из бота. Если Telegram не открывает приложение, выберите в меню браузера «Открыть в браузере» или скопируйте настройки и нажмите «Вставить из буфера» в приложении. После добавления нажмите «Подключить».</small>
+</main>
+<script>
+(() => {
+  const status = document.getElementById('status');
+  const open = document.getElementById('open');
+  const copy = document.getElementById('copy');
+  try {
+    const fragment = location.hash.slice(1);
+    if (fragment.length > 16384) throw new Error('size');
+    const params = new URLSearchParams(fragment);
+    const value = params.get('document_url');
+    if (params.getAll('version').length !== 1 || params.get('version') !== '1' ||
+        params.getAll('document_url').length !== 1 || !value || value.length > 2048 || /[\s\\]/u.test(value)) throw new Error('profile');
+    const doc = new URL(value);
+    if (doc.protocol !== 'https:' || doc.username || doc.password || (doc.port && doc.port !== '443') ||
+        !['disk.yandex.ru','disk.yandex.com','docs.yandex.ru','docs.yandex.com','disk.360.yandex.ru'].includes(doc.hostname) ||
+        !doc.pathname || doc.pathname === '/') throw new Error('URL');
+    const query = new URLSearchParams({version:'1', document_url:value}).toString();
+    const scheme = 'afzopenflux://import?' + query;
+    const android = /Android/i.test(navigator.userAgent);
+    // A package-targeted intent also works as a user gesture in Android browsers.
+    open.href = android ? 'intent://import?' + query + '#Intent;scheme=afzopenflux;package=uk.superbebra.afzopenflux;end' : scheme;
+    open.hidden = false;
+    copy.hidden = false;
+    copy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(value);
+        status.textContent = 'Настройки скопированы. В AFZ OpenFlux нажмите «Вставить из буфера».';
+      } catch (_) {
+        const manual = document.getElementById('manual');
+        manual.textContent = value;
+        manual.hidden = false;
+        status.textContent = 'Выделите и скопируйте настройки ниже, затем вставьте их в приложении.';
+      }
+    });
+    status.textContent = 'Если приложение не открылось автоматически, нажмите кнопку ниже. Профиль добавится сразу.';
+    // Browsers may require the visible button; do not loop or claim import success.
+    try { location.href = scheme; } catch (_) {}
+  } catch (_) {
+    status.textContent = 'Ссылка неполная или повреждена. Откройте OpenFlux в боте и снова нажмите «Добавить в AFZ OpenFlux».';
+    document.getElementById('help').hidden = true;
+  }
+})();
+</script>
+</html>

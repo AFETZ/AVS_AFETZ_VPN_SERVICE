@@ -16,6 +16,20 @@ class NavProfile(str, Enum):
     SELECT_SERVER = "select_server"
 
 
+class NavOpenFlux(str, Enum):
+    MAIN = "openflux"
+    WINDOWS = "openflux_windows"
+    LINUX = "openflux_linux"
+    MOBILE = "openflux_mobile"
+    ANDROID = "openflux_android"
+    IOS = "openflux_ios"
+    DOWNLOAD_ANDROID = "openflux_download_android"
+    DOWNLOAD_SOURCE = "openflux_download_source"
+    DOWNLOAD_PROFILE = "openflux_download_profile"
+    DOWNLOAD_WINDOWS = "openflux_download_windows"
+    DOWNLOAD_LINUX = "openflux_download_linux"
+
+
 class NavReferral(str, Enum):
     MAIN = "referral"
     GET_REFERRED_TRIAL = "get_referral_trial"
@@ -146,3 +160,9 @@ class NavAdminTools(str, Enum):
 
     RESTART_BOT = "restart_bot"
     TEST_PURCHASE = "test_purchase"
+    TEST_AUTOPAY_BIND = "test_autopay_bind"
+    TEST_AUTOPAY_BIND_CONFIRM = "test_autopay_bind_confirm"
+    TEST_AUTOPAY_ENABLE = "test_autopay_enable"
+    TEST_AUTOPAY_DISABLE = "test_autopay_disable"
+    TEST_AUTOPAY_FORGET = "test_autopay_forget"
+    TEST_AUTOPAY_FORGET_CONFIRM = "test_autopay_forget_confirm"

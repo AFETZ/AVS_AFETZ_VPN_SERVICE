@@ -1,0 +1,48 @@
+diff --git a/transport/yandex/yandex.go b/transport/yandex/yandex.go
+index 621ad04..9cc0069 100644
+--- a/transport/yandex/yandex.go
++++ b/transport/yandex/yandex.go
+@@ -295,7 +295,8 @@ func (t *YandexDocsTransport) scheduleReconnect(attempt int) {
+ 	}
+ 
+ 	t.RecordReconnect()
+-	t.connectToDoc(attempt + 1)
++	// Avoid a tight reconnect loop when DNS or the editor is unavailable.
++	time.AfterFunc(2*time.Second, func() { t.connectToDoc(attempt + 1) })
+ }
+ 
+ func (t *YandexDocsTransport) fetchDocInfo(url, userID string) (YandexDocsInfo, error) {
+diff --git a/tunnel/rawsocket_windows.go b/tunnel/rawsocket_windows.go
+index aa9e67b..4fe6596 100644
+--- a/tunnel/rawsocket_windows.go
++++ b/tunnel/rawsocket_windows.go
+@@ -1,4 +1,4 @@
+-//go:build windows
++//go:build windows && !openflux_client
+ 
+ package tunnel
+ 
+diff --git a/tunnel/rawsocket_windows_client.go b/tunnel/rawsocket_windows_client.go
+new file mode 100644
+index 0000000..a35d7da
+--- /dev/null
++++ b/tunnel/rawsocket_windows_client.go
+@@ -0,0 +1,18 @@
++//go:build windows && openflux_client
++
++package tunnel
++
++import (
++	"fmt"
++	"gvisor.dev/gvisor/pkg/tcpip"
++)
++
++// SOCKS clients do not use raw sockets or the WinDivert driver.
++// Embed the ordinary endpoint to satisfy stack.LinkEndpoint at build time.
++type RawSocketEndpoint struct{ *TunnelLinkEndpoint }
++
++func NewRawSocketEndpoint(nicID tcpip.NICID) (*RawSocketEndpoint, error) {
++	return nil, fmt.Errorf("this Windows build is client-only; run the exit node on Linux")
++}
++
++func (e *RawSocketEndpoint) SetTransportSender(send func([]byte)) {}

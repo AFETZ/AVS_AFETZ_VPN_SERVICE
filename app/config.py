@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from logging.handlers import MemoryHandler
 from pathlib import Path
 
@@ -73,7 +73,8 @@ class BotConfig:
     DEV_ID: int
     SUPPORT_ID: int
     DOMAIN: str
-    CABINET_DOMAIN: str | None
+    SUBSCRIPTION_DOMAIN: str | None
+    SUBSCRIPTION_BACKUP_DOMAIN: str | None
     PORT: int
     START_IMAGE: str | None
     PROXY_URL: str | None
@@ -115,6 +116,7 @@ class XUIConfig:
     SUBSCRIPTION_SCHEME: str | None
     SUBSCRIPTION_PORT: int
     SUBSCRIPTION_PATH: str
+    SERVER_CREDENTIALS: dict = field(default_factory=dict, repr=False)
 
 
 @dataclass
@@ -177,6 +179,14 @@ class LoggingConfig:
 
 
 @dataclass
+class OpenFluxConfig:
+    # Explicit pilot access is independent of administrator and subscription rights.
+    ENABLED: bool = False
+    DOC_URL: str = field(default="", repr=False)
+    ALLOWED_USER_IDS: list[int] = field(default_factory=list)
+
+
+@dataclass
 class Config:
     bot: BotConfig
     shop: ShopConfig
@@ -188,6 +198,7 @@ class Config:
     database: DatabaseConfig
     redis: RedisConfig
     logging: LoggingConfig
+    openflux: OpenFluxConfig = field(default_factory=OpenFluxConfig)
 
 
 def normalize_bot_domain(domain: str) -> str:
@@ -309,9 +320,24 @@ def load_config() -> Config:
             DEV_ID=env.int("BOT_DEV_ID"),
             SUPPORT_ID=env.int("BOT_SUPPORT_ID"),
             DOMAIN=normalize_bot_domain(env.str("BOT_DOMAIN")),
-            CABINET_DOMAIN=(
-                normalize_bot_domain(cabinet_domain)
-                if (cabinet_domain := env.str("BOT_CABINET_DOMAIN", default=None))
+            SUBSCRIPTION_DOMAIN=(
+                normalize_bot_domain(subscription_domain)
+                if (
+                    subscription_domain := env.str(
+                        "BOT_SUBSCRIPTION_DOMAIN",
+                        default=None,
+                    )
+                )
+                else None
+            ),
+            SUBSCRIPTION_BACKUP_DOMAIN=(
+                normalize_bot_domain(subscription_backup_domain)
+                if (
+                    subscription_backup_domain := env.str(
+                        "BOT_SUBSCRIPTION_BACKUP_DOMAIN",
+                        default=None,
+                    )
+                )
                 else None
             ),
             PORT=env.int("BOT_PORT", default=DEFAULT_BOT_PORT),
@@ -393,6 +419,7 @@ def load_config() -> Config:
             PAYMENT_YOOMONEY_ENABLED=payment_yoomoney_enabled,
         ),
         xui=XUIConfig(
+            SERVER_CREDENTIALS=env.json("XUI_SERVER_CREDENTIALS", default={}),
             USERNAME=env.str("XUI_USERNAME"),
             PASSWORD=env.str("XUI_PASSWORD"),
             TOKEN=xui_token,
@@ -454,5 +481,10 @@ def load_config() -> Config:
                 default=DEFAULT_LOG_BACKUP_COUNT,
                 validate=Range(min=0, error="LOG_BACKUP_COUNT must be >= 0"),
             ),
+        ),
+        openflux=OpenFluxConfig(
+            ENABLED=env.bool("OPENFLUX_ENABLED", default=False),
+            DOC_URL=env.str("OPENFLUX_DOC_URL", default="").strip(),
+            ALLOWED_USER_IDS=env.list("OPENFLUX_ALLOWED_USER_IDS", subcast=int, default=[]),
         ),
     )

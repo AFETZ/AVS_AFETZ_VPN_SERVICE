@@ -182,3 +182,7 @@ app/data-staging/
 tmp_test/
 .local/
 .ecc/
+
+# Local migration state and dated reverse-proxy backups
+/.migration-authoritative-data-restored
+/deploy/*.pre-acme-fix-*

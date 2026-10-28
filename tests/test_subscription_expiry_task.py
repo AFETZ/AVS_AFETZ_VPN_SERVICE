@@ -163,7 +163,7 @@ async def test_expiring_in_2_hours_uses_urgent_notification(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_expiry_notification_includes_cabinet_link_when_configured(monkeypatch):
+async def test_expiry_notification_does_not_include_external_renewal_link(monkeypatch):
     expiry_time = _expiry_ms(20)
     user = SimpleNamespace(
         tg_id=123,
@@ -174,14 +174,7 @@ async def test_expiry_notification_includes_cabinet_link_when_configured(monkeyp
         current_period_started_at=None,
         current_period_duration_days=None,
     )
-    notification_service = FakeNotificationService(
-        config=SimpleNamespace(
-            bot=SimpleNamespace(
-                DOMAIN="bot.example",
-                CABINET_DOMAIN="sticker.example",
-            )
-        )
-    )
+    notification_service = FakeNotificationService()
     monkeypatch.setattr(
         subscription_expiry.User,
         "get_all",
@@ -197,13 +190,7 @@ async def test_expiry_notification_includes_cabinet_link_when_configured(monkeyp
     )
 
     assert notification_service.messages == [
-        (
-            123,
-            "task:message:subscription_expiry: 3 2 ч.\n\n"
-            "🌐 Запасной способ продления: сохраните личный кабинет заранее. "
-            "Он работает без Telegram, бота и активного VPN:\n"
-            "https://sticker.example/cabinet/vpn-123",
-        )
+        (123, "task:message:subscription_expiry: 3 2 ч.")
     ]
 
 

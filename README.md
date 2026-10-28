@@ -21,7 +21,7 @@
 
 **AFZVPN Bot** - продовая сборка Telegram-бота для VPN-сервиса. Он связывает витрину тарифов, оплаты, 3X-UI, Happ-подключение, подписку обхода БС, админку, уведомления, бэкапы и операционные сценарии в один управляемый сервис.
 
-Проект вырос из open-source базы `3xui-shop`, но текущий репозиторий поддерживается как кастомная production-версия AFZVPN: с собственным онбордингом, web cabinet, защитой runtime, multi-server логикой, релизным процессом и версионируемой wiki.
+Проект вырос из open-source базы `3xui-shop`, но текущий репозиторий поддерживается как кастомная production-версия AFZVPN: с собственным Telegram-онбордингом, защитой runtime, multi-server логикой, релизным процессом и версионируемой wiki.
 
 ## Возможности
 
@@ -60,7 +60,7 @@ Telegram user
   -> SQLite + Redis
   -> 3X-UI panels
   -> aiohttp public endpoints
-  -> Happ / payment gateways / web cabinet
+  -> Happ / payment gateways
 ```
 
 | Компонент | Ответственность |
@@ -68,22 +68,22 @@ Telegram user
 | `app/__main__.py` | старт bot + web app, polling/webhook, scheduler, Redis, gateway setup |
 | `app/bot/routers` | Telegram UI, callback flow, админские экраны |
 | `app/bot/services` | бизнес-логика подписок, 3X-UI, серверов, jobs, runtime metrics |
-| `app/web` | публичные subscription endpoints, connection redirect, cabinet |
+| `app/web` | технические subscription endpoints и connection redirect |
 | `app/db` | SQLAlchemy models и Alembic migrations |
 | `plans.json` | commercial plan catalog |
 
-## Public Endpoints
+## Технические Endpoints
 
 | Route | Назначение |
 | --- | --- |
-| `/healthz` | health check |
-| `/readyz` | readiness check: БД, Redis и runtime-сводка |
+| `/healthz` | локальный health check |
+| `/readyz` | локальный readiness check: БД, Redis и runtime-сводка |
 | `/webhook` | Telegram webhook endpoint |
 | `/connection` | redirect для Happ deep-links |
 | `/sub/{vpn_id}` | основная подписка |
 | `/wl-filtered/{vpn_id}` | рекомендуемая подписка обхода БС |
 | `/wl/{vpn_id}` | запасная подписка обхода БС |
-| `/cabinet/{vpn_id}` | web cabinet пользователя |
+| `/geoip.dat`, `/geosite.dat` | кэшируемые geo-файлы Happ без прямого доступа клиента к GitHub |
 | `/yookassa`, `/yoomoney`, `/cryptomus`, `/heleket` | payment callbacks |
 
 ## Быстрый Старт
@@ -113,7 +113,6 @@ docker logs --tail=120 3xui-shop-bot
 | --- | --- |
 | `BOT_TOKEN` | токен Telegram-бота |
 | `BOT_DOMAIN` | публичный HTTPS base URL для бота и подписок |
-| `BOT_CABINET_DOMAIN` | отдельный HTTPS base URL для кабинета/продления без VPN |
 | `BOT_USE_WEBHOOK` | `True` для webhook, `False` для polling |
 | `BOT_PROXY_URL` | SOCKS5 proxy для Telegram API, если нужен |
 | `XUI_USERNAME`, `XUI_PASSWORD` | доступ к 3X-UI |
@@ -154,6 +153,8 @@ docker run --rm -v "$PWD:/repo" -w /repo 3xui-shop-bot \
 Последний полный baseline-прогон: `128 passed`.
 
 ## Документация
+
+Отдельный эксперимент с собственным выходным узлом: [OpenFlux — тест для администратора](docs/openflux_pilot_ru.md).
 
 Wiki-source хранится в [docs/wiki](docs/wiki), поэтому документация версионируется вместе с кодом.
 

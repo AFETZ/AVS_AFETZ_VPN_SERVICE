@@ -36,17 +36,16 @@ def patch_i18n(monkeypatch):
 
 
 def test_main_menu_keyboard_keeps_primary_inline_entrypoints():
-    markup = main_menu_keyboard(cabinet_url="https://cabinet.example/cabinet/vpn-1")
+    markup = main_menu_keyboard()
     texts = flatten_keyboard_texts(markup)
 
     assert "main_menu:button:profile" in texts
     assert "main_menu:button:subscription" in texts
-    assert "🌐 Продлить на сайте" in texts
     assert "main_menu:button:support" in texts
     assert "main_menu:button:news_channel" in texts
 
 
-def test_subscription_keyboard_contains_cabinet_renewal_button():
+def test_subscription_keyboard_keeps_renewal_inside_bot():
     callback_data = SubscriptionData(
         state=NavSubscription.PROCESS,
         user_id=1,
@@ -56,18 +55,14 @@ def test_subscription_keyboard_contains_cabinet_renewal_button():
     markup = subscription_keyboard(
         has_subscription=True,
         callback_data=callback_data,
-        cabinet_url="https://cabinet.example/cabinet/vpn-1",
     )
     buttons = [button for row in markup.inline_keyboard for button in row]
 
-    cabinet_buttons = [
-        button for button in buttons if button.text == "🌐 Продлить на сайте без VPN"
-    ]
-    assert len(cabinet_buttons) == 1
-    assert cabinet_buttons[0].url == "https://cabinet.example/cabinet/vpn-1"
+    assert "subscription:button:extend" in [button.text for button in buttons]
+    assert all(button.url is None for button in buttons)
 
 
-def test_subscription_text_explains_cabinet_renewal_path():
+def test_subscription_text_does_not_advertise_external_renewal():
     status = SubscriptionStatus(
         user=SimpleNamespace(tg_id=1),
         client_data=None,
@@ -80,8 +75,7 @@ def test_subscription_text_explains_cabinet_renewal_path():
 
     text = _build_subscription_text(status)
 
-    assert "без Telegram, бота и активного VPN" in text
-    assert "Продлить на сайте" in text
+    assert text == "subscription:message:not_active"
 
 
 def test_additional_profile_keyboard_contains_relevant_actions():

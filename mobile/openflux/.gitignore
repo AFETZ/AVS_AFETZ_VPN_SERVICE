@@ -1,0 +1,12 @@
+android/build/
+ios/Frameworks/
+ios/*.xcodeproj/
+ios/DerivedData/
+*.aar
+*.apk
+*.ipa
+*.xcarchive/
+*.xcframework/
+*.jks
+*.p12
+*.mobileprovision

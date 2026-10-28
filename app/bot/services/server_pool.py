@@ -5,6 +5,7 @@ from py3xui import AsyncApi, Inbound
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.config import Config
+from app.bot.services.xui_csrf import CsrfAsyncApi
 from app.bot.utils.network import ping_url
 from app.db.models import Server, User
 
@@ -79,11 +80,13 @@ class ServerPoolService:
         if server.id not in self._servers:
             xui_logger = logging.getLogger(f"xui_{server.name}")
             xui_logger.setLevel(logging.WARNING)
-            api = AsyncApi(
+            credentials = getattr(self.config.xui, "SERVER_CREDENTIALS", {}).get(server.name, {})
+            api_class = CsrfAsyncApi if credentials.get("csrf") else AsyncApi
+            api = api_class(
                 host=server.host,
-                username=self.config.xui.USERNAME,
-                password=self.config.xui.PASSWORD,
-                token=self.config.xui.TOKEN,
+                username=credentials.get("username", self.config.xui.USERNAME),
+                password=credentials.get("password", self.config.xui.PASSWORD),
+                token=credentials.get("token", self.config.xui.TOKEN),
                 # use_tls_verify=False,
                 logger=xui_logger,
             )
@@ -239,7 +242,7 @@ class ServerPoolService:
             )
             return server
 
-        servers_least_loaded = [conn.server for conn in self._servers.values()]
+        servers_least_loaded = [conn.server for conn in self._servers.values() if conn.server.max_clients > 0]
         if servers_least_loaded:
             server = sorted(servers_least_loaded, key=lambda s: s.current_clients)[0]
             logger.warning(
@@ -254,7 +257,7 @@ class ServerPoolService:
     async def get_selectable_servers(self) -> list[Server]:
         await self.sync_servers()
         return sorted(
-            [conn.server for conn in self._servers.values() if conn.server.online],
+            [conn.server for conn in self._servers.values() if conn.server.online and conn.server.max_clients > 0],
             key=_profile_server_sort_key,
         )
 

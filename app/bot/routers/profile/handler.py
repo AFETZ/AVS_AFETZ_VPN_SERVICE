@@ -76,12 +76,9 @@ async def callback_profile(
     reply_markup = (
         profile_keyboard(
             show_additional_profile_key=has_additional_profile,
-            cabinet_url=services.subscription.get_cabinet_url(user),
         )
         if client_data and not client_data.has_subscription_expired
-        else buy_subscription_keyboard(
-            cabinet_url=services.subscription.get_cabinet_url(user),
-        )
+        else buy_subscription_keyboard()
     )
     await callback.message.edit_text(
         text=await prepare_message(user=user, client_data=client_data),
@@ -176,7 +173,6 @@ async def callback_server_selected(
             show_additional_profile_key=bool(
                 status.status_check_ok and status.has_additional_profile
             ),
-            cabinet_url=services.subscription.get_cabinet_url(user),
         ),
     )
 

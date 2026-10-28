@@ -18,8 +18,19 @@ class DummySessionFactory:
         return None
 
 
-def _service(subscription_scheme="http", server_pool_service=None):
+def _service(
+    subscription_scheme="http",
+    server_pool_service=None,
+    *,
+    subscription_domain=None,
+    subscription_backup_domain=None,
+):
     config = SimpleNamespace(
+        bot=SimpleNamespace(
+            DOMAIN="https://bot.example",
+            SUBSCRIPTION_DOMAIN=subscription_domain,
+            SUBSCRIPTION_BACKUP_DOMAIN=subscription_backup_domain,
+        ),
         xui=SimpleNamespace(
             SUBSCRIPTION_PORT=2096,
             SUBSCRIPTION_PATH="/sub/",
@@ -31,6 +42,20 @@ def _service(subscription_scheme="http", server_pool_service=None):
         session=DummySessionFactory(),
         server_pool_service=server_pool_service or SimpleNamespace(),
     )
+
+
+@pytest.mark.asyncio
+async def test_get_key_prefers_dedicated_subscription_domain(monkeypatch):
+    user = SimpleNamespace(tg_id=1, server_id=1, vpn_id="vpn-1")
+    monkeypatch.setattr(User, "get", AsyncMock(return_value=user))
+
+    service = _service(
+        subscription_domain="link.example",
+        subscription_backup_domain="bot.example",
+    )
+
+    assert await service.get_key(user) == "https://link.example/sub/vpn-1"
+    assert await service.get_backup_key(user) == "https://bot.example/sub/vpn-1"
 
 
 @pytest.mark.asyncio

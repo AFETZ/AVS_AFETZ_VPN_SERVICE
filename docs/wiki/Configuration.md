@@ -8,7 +8,8 @@
 
 - Telegram: `BOT_TOKEN`, `BOT_ADMINS`, `BOT_DEV_ID`;
 - публичный домен: `BOT_DOMAIN`, `BOT_HOST`;
-- отдельный домен кабинета: `BOT_CABINET_DOMAIN` - если задан, ссылки на кабинет и payment return URL строятся на нем, а подписки остаются на `BOT_DOMAIN`;
+- отдельный домен выдачи: `BOT_SUBSCRIPTION_DOMAIN` - используется для `/connection`, `/sub`, `/wl` и `/wl-filtered`, по умолчанию равен `BOT_DOMAIN`;
+- запасной домен выдачи: `BOT_SUBSCRIPTION_BACKUP_DOMAIN` - если задан и отличается от основного, бот показывает отдельную запасную кнопку;
 - режим Telegram updates: `BOT_USE_WEBHOOK`;
 - proxy: `BOT_PROXY_URL`, `BOT_PROXY_STRICT`, `BOT_PROXY_CHECK_TIMEOUT`;
 - 3X-UI: `XUI_USERNAME`, `XUI_PASSWORD`, `XUI_SUBSCRIPTION_*`;
@@ -52,6 +53,12 @@ Production service:
 
 ```bash
 docker compose up -d --build bot
+```
+
+После изменения доменов обязательно проверить локальные health endpoints, deep-link redirect и geo-файлы:
+
+```bash
+scripts/smoke_test_prod.sh
 ```
 
 Staging service использует `docker-compose.staging.yml` и отдельный `.env.staging`.

@@ -10,7 +10,7 @@ def parse_redirect_url(query_string: str) -> dict[str, str]:
 
 async def ping_url(url: str, timeout: int = 5) -> float | None:
     try:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(trust_env=True) as session:
             start_time = time.time()
             async with session.get(url=url, timeout=timeout, ssl=False) as response:
                 if response.status != 200:

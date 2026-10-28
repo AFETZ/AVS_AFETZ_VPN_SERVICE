@@ -479,6 +479,44 @@ async def callback_user_confirm_plan(
     )
 
 
+@router.callback_query(F.data.startswith("user_lifetime:"), IsAdmin())
+async def callback_user_lifetime(
+    callback: CallbackQuery,
+    user: User,
+    session: AsyncSession,
+    services: ServicesContainer,
+    gateway_factory: GatewayFactory,
+) -> None:
+    parts = callback.data.split(":")
+    if len(parts) != 3 or not parts[1].isdigit() or parts[2] not in {"0", "1"}:
+        await callback.answer(text="Некорректная команда.", show_alert=True)
+        return
+    target = await User.get(session=session, tg_id=int(parts[1]))
+    if not target:
+        await callback.answer(text=_("user_editor:popup:user_not_found"), show_alert=True)
+        return
+    enabled = parts[2] == "1"
+    if enabled and target.is_blocked:
+        await callback.answer(text="Сначала разблокируйте пользователя.", show_alert=True)
+        return
+    await callback.answer()
+    if not await services.vpn.set_lifetime_subscription(target, enabled=enabled):
+        await callback.message.edit_text(
+            text="Не удалось изменить подписку на всех серверах. Проверьте доступность панелей и наличие клиента, затем повторите.",
+            reply_markup=back_keyboard(NavAdminTools.USER_DETAILS + f"_{target.tg_id}"),
+        )
+        return
+    if enabled:
+        await services.subscription.clear_scheduled_plan(user=target)
+    logger.info("Admin %s set lifetime subscription for %s enabled=%s", user.tg_id, target.tg_id, enabled)
+    session.expire_all()
+    await _render_user_details(
+        chat_id=callback.message.chat.id, message_id=callback.message.message_id,
+        tg_id=int(parts[1]), session=session, services=services,
+        gateway_factory=gateway_factory, bot=callback.bot,
+    )
+
+
 @router.callback_query(F.data.startswith(NavAdminTools.USER_TOGGLE_BLOCK.value + ":"), IsAdmin())
 async def callback_user_toggle_block(
     callback: CallbackQuery,
@@ -720,7 +758,7 @@ async def _render_user_details(
         text=_build_user_details_text(details),
         chat_id=chat_id,
         message_id=message_id,
-        reply_markup=user_details_keyboard(details.tg_id, is_blocked=details.is_blocked),
+        reply_markup=user_details_keyboard(details.tg_id, is_blocked=details.is_blocked, is_lifetime=details.expiry_timestamp == -1, subscription_enabled=details.subscription_active),
     )
 
 
@@ -794,6 +832,8 @@ def _build_user_details_text(details: AdminUserDetails) -> str:
         trial_used="+" if details.trial_used else "—",
         source_invite=details.source_invite_name or "—",
     )
+    if details.expiry_timestamp == -1:
+        base_text += "\n<b>Вечная подписка:</b> " + ("включена" if details.subscription_active else "отключена")
     block_text = "да" if details.is_blocked else "нет"
     server_status = (
         "🟢 online" if details.server_online else "🔴 offline"

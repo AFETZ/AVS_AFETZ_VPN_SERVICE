@@ -1,0 +1,4 @@
+# Unified diff context must retain its leading spaces and tabs.
+deploy/openflux/patches/*.patch -whitespace
+# Preserve the upstream license verbatim.
+mobile/openflux/licenses/lz4.txt whitespace=-blank-at-eof

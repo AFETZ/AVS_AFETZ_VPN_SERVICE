@@ -1,0 +1,9 @@
+[Unit]
+Description=Check and heal Telegram SOCKS proxy for 3xui-shop
+After=network-online.target telegram-proxy.user.service
+Wants=telegram-proxy.user.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/andrey/apps/3xui-shop
+ExecStart=/home/andrey/apps/3xui-shop/scripts/check_telegram_proxy.sh
