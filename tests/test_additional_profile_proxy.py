@@ -1,3 +1,4 @@
+from time import monotonic
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -7,6 +8,7 @@ from aiohttp.test_utils import make_mocked_request
 
 from app.web.additional_profile import (
     ADDITIONAL_PROFILE_TITLE,
+    SMART_PROFILE_CACHE_TTL_SECONDS,
     ADDITIONAL_PROFILE_MIRROR_URLS,
     AdditionalProfileSnapshot,
     AdditionalProfileProxy,
@@ -312,7 +314,8 @@ async def test_current_whitelist_proxy_serves_stale_cache_when_refresh_fails(mon
         text="vless://cached@1.1.1.1:443?type=xhttp&mode=packet-up#cached\n",
         source_url="https://profiles.example/cached.txt",
     )
-    proxy._cached_profile_at = 0
+    # A freshly booted CI runner may have less uptime than the cache TTL.
+    proxy._cached_profile_at = monotonic() - SMART_PROFILE_CACHE_TTL_SECONDS - 1
     proxy._candidate_proxies = (
         SimpleNamespace(_fetch_profile=AsyncMock(side_effect=ClientError("down"))),
     )
@@ -326,6 +329,7 @@ async def test_current_whitelist_proxy_serves_stale_cache_when_refresh_fails(mon
 
     assert snapshot.is_stale is True
     assert "cached@1.1.1.1" in snapshot.text
+    proxy._fetch_cidr_snapshot.assert_awaited_once()
 
 
 @pytest.mark.asyncio
